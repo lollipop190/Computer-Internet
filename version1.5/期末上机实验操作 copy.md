@@ -1,0 +1,306 @@
+# 拓扑
+
+![img](./img/whole.png)
+
+# PC配置
+
+PC1  
+
+IP:192.168.10.1 mask:255.255.255.0 gateway:192.168.10.3
+
+PC2
+
+IP:192.168.20.1 mask:255.255.255.0 gateway:192.168.20.3
+
+PC3
+
+IP:192.168.10.2 mask:255.255.255.0 gateway:192.168.10.3
+
+PC4 
+
+IP:192.168.20.2 mask:255.255.255.0 gateway:192.168.20.3
+
+PC5
+
+IP:200.1.5.2 mask:255.255.255.0 gateway:200.1.5.1
+
+
+
+
+
+## 基本配置（VLAN，RIP）
+
+**配置VLAN以及所有路由器、PC的IP地址，并配置动态RIP**
+
+Switch1
+
+```
+reload（如果需要）
+
+//将Switch1和Switch2之间的链路设置为trunk链路
+Switch(config)#hostname Switch1
+Switch1(config)#interface g1/0/24
+Switch1(config-if)#switchport mode trunk
+
+Switch1(config)#vlan 10
+Switch1(config)#vlan 20
+
+Switch1(config)#interface g1/0/1
+Switch1(config-if)#switchport mode access
+Switch1(config-if)#switchport access vlan 10
+Switch1(config-if)#exit
+Switch1(config)#interface g 1/0/2
+Switch1(config-if)#switchport mode access
+Switch1(config-if)#switchport access vlan 20
+```
+
+Switch2
+
+```
+reload（如果需要）
+
+//将Switch1和Switch2之间的链路设置为trunk链路
+Switch(config)#hostname Switch2
+Switch2(config)#interface g1/0/24
+Switch2(config-if)#switchport mode trunk
+
+Switch2(config)#interface g1/0/1
+Switch2(config-if)#switchport mode access
+Switch2(config-if)#switchport access vlan 10
+(这里有可能会报错，如果报错尝试重新输入一遍上面的命令，下面的vlan 20类似)
+Switch2(config-if)#exit
+Switch2(config)#interface g1/0/2
+Switch2(config-if)#switchport mode access 
+Switch2(config-if)#switchport access vlan 20
+
+
+Switch2(config)#interface g1/0/23
+Switch2(config-if)#switchport mode trunk 
+```
+
+Router1
+
+```
+reload（如果需要）
+
+Router#config terminal
+Router(config)#hostname Router1
+Router1(config)#interface g0/0/0
+Router1(config-if)#no ip address
+Router1(config-if)#no shutdown
+
+Router1(config-if)#int g0/0/0.10
+Router1(config-subif)#encapsulation dot1Q 10
+Router1(config-subif)#ip address 192.168.10.3 255.255.255.0
+Router1(config-subif)#exit
+
+Router1(config)#int g0/0/0.20
+Router1(config-subif)#encapsulation dot1Q 20
+Router1(config-subif)#ip address 192.168.20.3 255.255.255.0
+
+Router1(config)#interface s0/1/0
+Router1(config-if)#ip address 192.168.30.1 255.255.255.0
+Router1(config-if)#no shutdown
+
+
+Router1(config)#router rip
+Router1(config-router)#network 192.168.10.0
+Router1(config-router)#network 192.168.20.0
+Router1(config-router)#network 192.168.30.0
+```
+Router2
+
+```
+reload（如果需要）
+
+Router#config terminal
+Router(config)#hostname Router2
+Router2(config)#interface s0/1/0
+Router2(config-if)#ip address 192.168.30.2 255.255.255.0
+Router2(config-if)#no shutdown
+
+Router2(config)#interface s0/1/1
+Router2(config-if)#ip address 200.1.1.1 255.255.255.0
+Router2(config-if)#no shutdown
+
+
+Router2(config)#router rip
+Router2(config-router)#network 192.168.30.0
+Router2(config-router)#network 200.1.1.0
+```
+
+
+Router3
+
+```
+reload（如果需要）
+
+Router#config terminal
+Router(config)#hostname Router3
+Router3(config)#interface s0/1/1
+Router3(config-if)#ip address 200.1.1.2 255.255.255.0
+Router3(config-if)#no shutdown
+
+Router3(config)#interface s0/1/0
+Router3(config-if)#ip address 200.1.3.2 255.255.255.0
+Router3(config-if)#no shutdown
+
+Router3(config)#interface g0/0/1
+Router3(config-if)#ip address 200.1.2.2 255.255.255.0
+Router3(config-if)#no shutdown
+
+
+Router3(config)#router rip
+Router3(config-router)#network 200.1.1.0
+Router3(config-router)#network 200.1.2.0
+Router3(config-router)#network 200.1.3.0
+```
+
+
+Router4
+
+```
+reload（如果需要）
+
+Router#config terminal
+Router(config)#hostname Router4
+Router4(config)#interface g0/0/0
+Router4(config-if)#ip address 200.1.5.1 255.255.255.0
+Router4(config-if)#no shutdown
+
+Router4(config)#interface s0/1/1
+Router4(config-if)#ip address 200.1.4.1 255.255.255.0
+Router4(config-if)#no shutdown
+
+Router4(config)#interface s0/1/0
+Router4(config-if)#ip address 200.1.3.1 255.255.255.0
+Router4(config-if)#no shutdown
+
+
+Router4(config)#router rip
+Router4(config-router)#network 200.1.3.0
+Router4(config-router)#network 200.1.4.0
+Router4(config-router)#network 200.1.5.0
+```
+
+Router5
+
+```
+reload（如果需要）
+
+Router#config terminal
+Router(config)#hostname Router5
+Router5(config)#interface g0/0/1
+Router5(config-if)#ip address 200.1.2.1 255.255.255.0
+Router5(config-if)#no shutdown
+
+Router5(config)#interface s0/1/1
+Router5(config-if)#ip address 200.1.4.2 255.255.255.0
+Router5(config-if)#no shutdown
+
+
+Router5(config)#router rip
+Router5(config-router)#network 200.1.2.0
+Router5(config-router)#network 200.1.4.0
+```
+
+
+
+**配置完之后理论上所有设备可以互ping**
+
+## 配置NAT（Router2）
+
+Router2
+
+配置NAT
+
+```
+Router2(config)#ip nat inside source static 192.168.10.1 200.1.1.101
+Router2(config)#ip nat inside source static 192.168.10.2 200.1.1.102
+Router2(config)#ip nat inside source static 192.168.20.1 200.1.1.201
+Router2(config)#ip nat inside source static 192.168.20.2 200.1.1.202
+
+Router2(config)#interface s0/1/0
+Router2(config-if)#ip nat inside
+Router2(config-if)#exit
+Router2(config)#interface s0/1/1
+Router2(config-if)#ip nat outside 
+Router2(config-if)#end
+Router2#debug ip nat
+IP NAT debugging is on
+```
+
+**从PC1（192.168.10.1）,PC2,PC3,PC4分别ping PC5（200.1.5.2），结果如下图（只有PC1，其他一样），此时理论上都可以ping通，而且地址转换正确**
+
+![1623314127008](img/01.png)
+
+![1623314156207](img/02.png)
+
+## 配置ACL（Router4，Router5)
+
+**在Route41上使用标准ACL禁止PC1（192.168.10.1）对PC5的ping命令**
+
+**未配置前PC1可以ping通PC5**
+
+![1623316324351](img/03.png)
+
+Router4
+
+```
+Router4(config)#access-list 1 deny host 200.1.1.101
+Router4(config)#access-list 1 permit any
+Router4(config)#interface g0/0/0
+Router4(config-if)#ip access-group 1 out
+
+```
+
+**然后在PC1上ping PC5已经是unreachable**
+
+![1623316324351](img/04.png)
+
+
+
+
+
+>  下面的操作或许不需要？
+
+**在Route5上配置ACL是为了验证动态RIP根据跳数选择最优路径，PC2对PC5的ping命令不经过Router5**
+
+```
+Router5(config)#access-list 1 deny host 200.1.1.201
+Router5(config)#access-list 1 permit any
+Router5(config)#interface s0/1/1
+Router5(config-if)#ip access-group 1 out
+
+```
+
+**可以看到依然可以ping通，因为PC2 ping PC5 不经过Route5**
+
+![1623316582964](img/05.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
